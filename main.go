@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -26,7 +25,7 @@ func main() {
 
 	printTitle()
 	printMenu()
-	requestMenuInput()
+	handleMenuInput()
 }
 
 func printTitle() {
@@ -51,8 +50,8 @@ func printMenu() {
 	fmt.Println()
 }
 
-// Prints the menu of game options.
-func requestMenuInput() {
+// Handles menu option selections
+func handleMenuInput() {
 
 	for {
 
@@ -65,6 +64,7 @@ func requestMenuInput() {
 		case "p":
 			// Start new game
 			play()
+			printMenu()
 		case "r":
 			// Display rules, loop back to start of input
 		case "q":
@@ -75,14 +75,17 @@ func requestMenuInput() {
 			// loop back to start of input
 		}
 	}
+}
 
+func handleWin() {
+
+	fmt.Println("You got it! Hit enter to return to the menu.")
+	fmt.Scanln()
 }
 
 // Start the core game loop.
 func play() {
 
-	// Test
-	// maxGuesses := 6
 	answer := selectWord()
 
 	fmt.Println("Answer: " + answer)
@@ -94,7 +97,7 @@ func play() {
 		fmt.Print("Guess: ")
 		fmt.Scanln(&guess)
 
-		result, err := compareWords(guess, answer)
+		result, err := compareRunes(convertToRunes(guess), convertToRunes(answer))
 
 		if err != nil {
 
@@ -103,19 +106,55 @@ func play() {
 		} else {
 
 			fmt.Println(result)
+
+			// Player has won!
+			if guess == answer {
+
+				handleWin()
+				return
+			}
 		}
 	}
 }
 
-// Compares the guess string to the answer string and returns
+// Converts the given string into a slice of runes.
+func convertToRunes(word string) []rune {
+
+	var runes []rune
+
+	for _, r := range word {
+
+		runes = append(runes, r)
+	}
+
+	return runes
+}
+
+// Returns a slice containing the indices in runes in which
+// r is found. If r is not in runes, nil is returned.
+func getRuneIndices(runes []rune, r rune) []int {
+
+	var indices []int
+
+	for i, ru := range runes {
+
+		if ru == r {
+			indices = append(indices, i)
+		}
+	}
+
+	return indices
+}
+
+// Compares the guess runes to the answer runes and returns
 // the result as a slice of equal length.
 //
 // The result slice will be comprised of the enums describing
-// whether each character is in the word, in the correct position,
-// or not in the word.
+// whether each rune is in the answer, in the correct position,
+// or not in the answer at all.
 //
-// If the guess and answer strings are of different lengths, an error is returned.
-func compareWords(guess string, answer string) ([]int, error) {
+// If the guess and answer slices are of different lengths, an error is returned.
+func compareRunes(guess []rune, answer []rune) ([]int, error) {
 
 	if len(guess) != len(answer) {
 
@@ -123,28 +162,41 @@ func compareWords(guess string, answer string) ([]int, error) {
 	}
 
 	result := make([]int, len(answer))
+	occurences := make(map[rune]int)
 
-	for i, c := range guess {
+	// Check for correct letters first
+	for i, r := range guess {
 
-		answerRuneIndex := strings.IndexRune(answer, c)
+		if answer[i] == r {
 
-		switch {
-
-		case i == answerRuneIndex:
+			occurences[r] = occurences[r] + 1
 			result[i] = correctPosition
+		}
+	}
 
-		case answerRuneIndex >= 0:
-			// TODO: Handle double letters
+	// Check for characters in the wrong position
+	for i, r := range guess {
+
+		// Skip runes already checked
+		if result[i] == correctPosition {
+
+			continue
+		}
+
+		occurences[r] = occurences[r] + 1
+		answerIndices := getRuneIndices(answer, r)
+
+		// Ignore extra occurences of a rune
+		if occurences[r] <= len(answerIndices) {
+
 			result[i] = wrongPosition
-
-		case answerRuneIndex == -1:
-			result[i] = notInWord
 		}
 	}
 
 	return result, nil
 }
 
+// Selects a random word from the list of answer words.
 func selectWord() string {
 
 	return Words[rand.Intn(len(Words))]
