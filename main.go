@@ -89,7 +89,7 @@ func handleMenuInput() {
 func printRules() {
 	fmt.Println("Attempt to guess a randomly selected 5-letter word.")
 	fmt.Printf("You get %v guesses to get the right word.\n", maxGuesses)
-	fmt.Println("After guessing you guess will be displayed with color coding indicating the following:")
+	fmt.Println("After guessing your guess will be displayed with color coding indicating the following:")
 	color.HiBlack("Gray - The letter is not in the word.")
 	color.Yellow("Yellow - The letter is in the word but is in the wrong position.")
 	color.Green("Green - The letter is in the word and in the right position.")
