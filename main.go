@@ -21,6 +21,8 @@ const (
 	wrongPosition
 )
 
+const maxGuesses int = 6
+
 var scanner *bufio.Scanner
 
 func init() {
@@ -85,7 +87,14 @@ func handleMenuInput() {
 }
 
 func printRules() {
-	fmt.Println("The rules are...")
+	fmt.Println("Attempt to guess a randomly selected 5-letter word.")
+	fmt.Printf("You get %v guesses to get the right word.\n", maxGuesses)
+	fmt.Println("After guessing you guess will be displayed with color coding indicating the following:")
+	color.HiBlack("Gray - The letter is not in the word.")
+	color.Yellow("Yellow - The letter is in the word but is in the wrong position.")
+	color.Green("Green - The letter is in the word and in the right position.")
+	fmt.Println("If all guesses are exhausted, the answer will be revealed. Good luck word nerd!")
+	fmt.Println("Hit enter to return to the menu.")
 	scanner.Scan()
 }
 
@@ -102,7 +111,7 @@ func play() {
 	var guesses []string
 	var results [][]int
 
-	for {
+	for len(guesses) < maxGuesses {
 
 		fmt.Print("Guess: ")
 		scanner.Scan()
@@ -128,6 +137,10 @@ func play() {
 			}
 		}
 	}
+
+	fmt.Printf("Nice try! The word was '%s.'\n", answer)
+	fmt.Println("Hit enter to return to the menu.")
+	scanner.Scan()
 }
 
 // Prints the results of the last guess and all previous guesses
