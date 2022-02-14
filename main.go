@@ -1,11 +1,15 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"math/rand"
 	"os"
+	"strings"
 	"time"
+
+	"github.com/fatih/color"
 )
 
 const (
@@ -17,8 +21,11 @@ const (
 	wrongPosition
 )
 
+var scanner *bufio.Scanner
+
 func init() {
 	rand.Seed(int64(time.Now().Nanosecond()))
+	scanner = bufio.NewScanner(os.Stdin)
 }
 
 func main() {
@@ -55,18 +62,18 @@ func handleMenuInput() {
 
 	for {
 
-		var input string
-
 		fmt.Print("Command: ")
-		fmt.Scanln(&input)
+		scanner.Scan()
 
-		switch input {
+		switch scanner.Text() {
 		case "p":
 			// Start new game
 			play()
 			printMenu()
 		case "r":
 			// Display rules, loop back to start of input
+			printRules()
+			printMenu()
 		case "q":
 			fmt.Println("Thanks for playing!")
 			os.Exit(0)
@@ -77,26 +84,30 @@ func handleMenuInput() {
 	}
 }
 
+func printRules() {
+	fmt.Println("The rules are...")
+	scanner.Scan()
+}
+
 func handleWin() {
 
 	fmt.Println("You got it! Hit enter to return to the menu.")
-	fmt.Scanln()
+	scanner.Scan()
 }
 
 // Start the core game loop.
 func play() {
 
 	answer := selectWord()
-
-	fmt.Println("Answer: " + answer)
+	var guesses []string
+	var results [][]int
 
 	for {
 
-		guess := ""
-
 		fmt.Print("Guess: ")
-		fmt.Scanln(&guess)
+		scanner.Scan()
 
+		guess := scanner.Text()
 		result, err := compareRunes(convertToRunes(guess), convertToRunes(answer))
 
 		if err != nil {
@@ -105,7 +116,9 @@ func play() {
 
 		} else {
 
-			fmt.Println(result)
+			guesses = append(guesses, guess)
+			results = append(results, result)
+			printGuessResult(guesses, results)
 
 			// Player has won!
 			if guess == answer {
@@ -114,6 +127,32 @@ func play() {
 				return
 			}
 		}
+	}
+}
+
+// Prints the results of the last guess and all previous guesses
+// with runes color coded depending on whether they are in the word,
+// not in the word, or in the word but the wrong location.
+func printGuessResult(guesses []string, results [][]int) {
+
+	for i, guess := range guesses {
+
+		capGuess := strings.ToUpper(guess)
+		colorResult := ""
+
+		for j, r := range capGuess {
+
+			switch results[i][j] {
+			case notInWord:
+				colorResult += color.HiBlackString(string(r))
+			case wrongPosition:
+				colorResult += color.YellowString(string(r))
+			case correctPosition:
+				colorResult += color.GreenString(string(r))
+			}
+		}
+
+		fmt.Println(colorResult)
 	}
 }
 
