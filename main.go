@@ -98,9 +98,11 @@ func printRules() {
 	scanner.Scan()
 }
 
-func handleWin() {
+func handleWin(guesses []string) {
 
-	fmt.Println("You got it! Hit enter to return to the menu.")
+	fmt.Println("You got it!")
+	fmt.Printf("Guesses: %v/%v\n", len(guesses), maxGuesses)
+	fmt.Println("Hit enter to return to the menu.")
 	scanner.Scan()
 }
 
@@ -132,7 +134,7 @@ func play() {
 			// Player has won!
 			if guess == answer {
 
-				handleWin()
+				handleWin(guesses)
 				return
 			}
 		}
