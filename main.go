@@ -126,7 +126,7 @@ func play() {
 
 		if err != nil {
 
-			fmt.Printf("Guesses must be at least %v characters long.\n", len(answer))
+			fmt.Printf("Guesses must be %v characters long.\n", len(answer))
 
 		} else {
 
