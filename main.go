@@ -112,6 +112,9 @@ func play() {
 	answer := selectWord()
 	var guesses []string
 	var results [][]int
+	usedLetters := make(map[rune]int)
+
+	fmt.Println("Guess the word!")
 
 	for len(guesses) < maxGuesses {
 
@@ -119,7 +122,7 @@ func play() {
 		scanner.Scan()
 
 		guess := scanner.Text()
-		result, err := compareRunes(convertToRunes(guess), convertToRunes(answer))
+		result, err := compareRunes(convertToRunes(guess), convertToRunes(answer), usedLetters)
 
 		if err != nil {
 
@@ -130,6 +133,7 @@ func play() {
 			guesses = append(guesses, guess)
 			results = append(results, result)
 			printGuessResult(guesses, results)
+			printAvailableLetters(usedLetters)
 
 			// Player has won!
 			if guess == answer {
@@ -145,6 +149,55 @@ func play() {
 	scanner.Scan()
 }
 
+// Prints out the complete list of letters with any
+// used in previous guesses printed in gray.
+func printAvailableLetters(usedLetters map[rune]int) {
+
+	letters := []rune{
+		'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+		'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'}
+
+	line := ""
+
+	for i, letter := range letters {
+
+		colorLetter := string(letter)
+
+		// Add hint color if the letter has been used
+		if _, ok := usedLetters[letter]; ok {
+			colorLetter = addHintColor(colorLetter, usedLetters[letter])
+		}
+
+		line += colorLetter + " "
+
+		if i == 12 || i == 25 {
+
+			fmt.Println(line)
+			line = ""
+		}
+	}
+}
+
+// Returns the ANSI coded version of the string
+// colored appropriately for the given hint.
+func addHintColor(str string, hint int) string {
+
+	switch hint {
+
+	case notInWord:
+		return color.HiBlackString(str)
+
+	case wrongPosition:
+		return color.YellowString(str)
+
+	case correctPosition:
+		return color.GreenString(str)
+
+	default:
+		return str
+	}
+}
+
 // Prints the results of the last guess and all previous guesses
 // with runes color coded depending on whether they are in the word,
 // not in the word, or in the word but the wrong location.
@@ -157,14 +210,7 @@ func printGuessResult(guesses []string, results [][]int) {
 
 		for j, r := range capGuess {
 
-			switch results[i][j] {
-			case notInWord:
-				colorResult += color.HiBlackString(string(r))
-			case wrongPosition:
-				colorResult += color.YellowString(string(r))
-			case correctPosition:
-				colorResult += color.GreenString(string(r))
-			}
+			colorResult += addHintColor(string(r), results[i][j])
 		}
 
 		fmt.Println(colorResult)
@@ -172,11 +218,12 @@ func printGuessResult(guesses []string, results [][]int) {
 }
 
 // Converts the given string into a slice of runes.
+// Each rune is the upper case.
 func convertToRunes(word string) []rune {
 
 	var runes []rune
 
-	for _, r := range word {
+	for _, r := range strings.ToUpper(word) {
 
 		runes = append(runes, r)
 	}
@@ -208,7 +255,7 @@ func getRuneIndices(runes []rune, r rune) []int {
 // or not in the answer at all.
 //
 // If the guess and answer slices are of different lengths, an error is returned.
-func compareRunes(guess []rune, answer []rune) ([]int, error) {
+func compareRunes(guess []rune, answer []rune, usedLetters map[rune]int) ([]int, error) {
 
 	if len(guess) != len(answer) {
 
@@ -225,6 +272,7 @@ func compareRunes(guess []rune, answer []rune) ([]int, error) {
 
 			occurences[r] = occurences[r] + 1
 			result[i] = correctPosition
+			usedLetters[r] = correctPosition
 		}
 	}
 
@@ -244,6 +292,18 @@ func compareRunes(guess []rune, answer []rune) ([]int, error) {
 		if occurences[r] <= len(answerIndices) {
 
 			result[i] = wrongPosition
+
+			// Don't overwrite correct position status on letters
+			if usedLetters[r] != correctPosition {
+
+				usedLetters[r] = wrongPosition
+			}
+		}
+
+		// Mark any letters that aren't in the word
+		if usedLetters[r] != wrongPosition && usedLetters[r] != correctPosition {
+
+			usedLetters[r] = notInWord
 		}
 	}
 
