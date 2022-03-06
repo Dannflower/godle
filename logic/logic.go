@@ -3,6 +3,7 @@ package logic
 import (
 	"errors"
 	"math/rand"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -39,6 +40,11 @@ func NewGame() {
 // If the guess string is invalid, an error is returned.
 func MakeGuess(guess string) error {
 
+	if !isValidWord(guess) {
+
+		return errors.New("must be a valid word")
+	}
+
 	result, err := compareRunes(convertToRunes(guess), convertToRunes(Answer), UsedLetters)
 
 	if err == nil {
@@ -54,6 +60,19 @@ func MakeGuess(guess string) error {
 func HasWon(guess string) bool {
 
 	return guess == Answer
+}
+
+// Returns true if the word is a valid word.
+func isValidWord(word string) bool {
+
+	for _, validWord := range ValidWords {
+
+		if strings.EqualFold(word, validWord) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // Converts the given string into a slice of runes.
@@ -98,7 +117,7 @@ func compareRunes(guess []rune, answer []rune, usedLetters map[rune]int) ([]int,
 
 	if len(guess) != len(answer) {
 
-		return nil, errors.New("length of guess and answer must match")
+		return nil, errors.New("must be at least " + strconv.Itoa(len(answer)) + " characters long")
 	}
 
 	result := make([]int, len(answer))
@@ -152,5 +171,5 @@ func compareRunes(guess []rune, answer []rune, usedLetters map[rune]int) ([]int,
 // Selects a random word from the list of answer words.
 func selectWord() string {
 
-	return Words[rand.Intn(len(Words))]
+	return AnswerWords[rand.Intn(len(AnswerWords))]
 }

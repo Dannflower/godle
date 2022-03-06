@@ -96,6 +96,8 @@ func handleWin(guesses []string) {
 // Start the core game loop.
 func play() {
 
+	logic.NewGame()
+
 	fmt.Println("Guess the word!")
 
 	for len(logic.Guesses) < logic.MaxGuesses {
@@ -108,7 +110,7 @@ func play() {
 
 		if err != nil {
 
-			fmt.Printf("Guesses must be %v characters long.\n", len(logic.Answer))
+			fmt.Printf("Invalid guess: %v.\n", err)
 
 		} else {
 
