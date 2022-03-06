@@ -32,6 +32,8 @@ func init() {
 // Starts a new game.
 func NewGame() {
 
+	Guesses = nil
+	Results = nil
 	UsedLetters = make(map[rune]int)
 	Answer = selectWord()
 }
@@ -41,8 +43,11 @@ func NewGame() {
 func MakeGuess(guess string) error {
 
 	if !isValidWord(guess) {
-
 		return errors.New("must be a valid word")
+	}
+
+	if isDuplicateGuess(guess) {
+		return errors.New("word has already been guessed")
 	}
 
 	result, err := compareRunes(convertToRunes(guess), convertToRunes(Answer), UsedLetters)
@@ -68,6 +73,19 @@ func isValidWord(word string) bool {
 	for _, validWord := range ValidWords {
 
 		if strings.EqualFold(word, validWord) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// Returns true if the given word was already guessed.
+func isDuplicateGuess(word string) bool {
+
+	for _, guess := range Guesses {
+
+		if strings.EqualFold(guess, word) {
 			return true
 		}
 	}
