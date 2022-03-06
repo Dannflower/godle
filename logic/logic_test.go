@@ -52,6 +52,22 @@ func usedLettersEqual(actual map[rune]int, expected map[rune]int) bool {
 	return true
 }
 
+// Returns true if both slices contain the same runes
+func runesEqual(actual []rune, expected []rune) bool {
+
+	if len(actual) != len(expected) {
+		return false
+	}
+
+	for i, r := range actual {
+		if r != expected[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
 func TestHasWonNo(t *testing.T) {
 
 	Answer = "aword"
@@ -350,5 +366,112 @@ func TestCompareRunes(t *testing.T) {
 
 	if actualResult != nil {
 		t.Fatalf("compareRunes(%v, %v) returned a non-nil result when comparing slices of different lengths.", guess, answer)
+	}
+}
+
+func TestSelectWord(t *testing.T) {
+
+	NewGame()
+	word := selectWord()
+
+	if !isValidAnswerWord(word) {
+		t.Fatalf("selectWord() returned %s, which is not a valid answer word.", word)
+	}
+}
+
+func TestHasWon(t *testing.T) {
+
+	// Correct guess
+	NewGame()
+	guess := Answer
+
+	if !HasWon(guess) {
+		t.Fatalf("HasWon(%s) returned false when answer was '%s'.", guess, Answer)
+	}
+
+	// Incorrect guess
+	NewGame()
+	Answer = "words"
+	guess = "fjord"
+
+	if HasWon(guess) {
+		t.Fatalf("HasWon(%s) returned true when answer was '%s'.", guess, Answer)
+	}
+}
+
+func TestGetRuneIndices(t *testing.T) {
+
+	// Rune present
+	NewGame()
+	runes := []rune{'a', 'b', 'c', 'a'}
+	r := 'a'
+	expectedResult := []int{0, 3}
+	actualResult := getRuneIndices(runes, r)
+
+	if !resultsEqual(actualResult, expectedResult) {
+		t.Fatalf("getRuneIndices(%v, %v) returned incorrect results. Expected: %v, Actual: %v", runes, r, expectedResult, actualResult)
+	}
+
+	// Rune not present
+	NewGame()
+	runes = []rune{'z', 'b', 'c', 'z'}
+	r = 'a'
+	expectedResult = []int{}
+	actualResult = getRuneIndices(runes, r)
+
+	if !resultsEqual(actualResult, expectedResult) {
+		t.Fatalf("getRuneIndices(%v, %v) returned incorrect results. Expected: %v, Actual: %v", runes, r, expectedResult, actualResult)
+	}
+}
+
+func TestConvertToRunes(t *testing.T) {
+
+	// Non-empty string
+	input := "string"
+	expected := []rune{'S', 'T', 'R', 'I', 'N', 'G'}
+	actual := convertToRunes(input)
+
+	if !runesEqual(actual, expected) {
+		t.Fatalf("convertToRunes(%s) returned %v, when %v was expected.", input, actual, expected)
+	}
+
+	// Empty string
+	input = ""
+	expected = []rune{}
+	actual = convertToRunes(input)
+
+	if !runesEqual(actual, expected) {
+		t.Fatalf("convertToRunes(%s) returned %v, when %v was expected.", input, actual, expected)
+	}
+}
+
+func TestIsDuplicateGuess(t *testing.T) {
+
+	// New guess
+	NewGame()
+	guess := "piety"
+	if isDuplicateGuess(guess) {
+		t.Fatalf("isDuplicateGuess(%s) returned true on a non-duplicate guess.", guess)
+	}
+
+	// Duplicate guess
+	MakeGuess(guess)
+	if !isDuplicateGuess(guess) {
+		t.Fatalf("isDuplicateGuess(%s) returned false on a duplicate guess.", guess)
+	}
+}
+
+func TestIsValidWord(t *testing.T) {
+
+	// Valid word
+	word := "piety"
+	if !isValidWord(word) {
+		t.Fatalf("isValidWord(%s) returned false for a valid word.", word)
+	}
+
+	// Invalid word
+	word = "bbbbb"
+	if isValidWord(word) {
+		t.Fatalf("isValidWord(%s) returned true for an invalid word.", word)
 	}
 }
