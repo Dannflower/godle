@@ -36,6 +36,22 @@ func resultsEqual(actual []int, expected []int) bool {
 	return true
 }
 
+// Returns true if both maps contain identical key/value pairs.
+func usedLettersEqual(actual map[rune]int, expected map[rune]int) bool {
+
+	if len(actual) != len(expected) {
+		return false
+	}
+
+	for key, value := range actual {
+		if value != expected[key] {
+			return false
+		}
+	}
+
+	return true
+}
+
 func TestHasWonNo(t *testing.T) {
 
 	Answer = "aword"
@@ -193,6 +209,13 @@ func TestMakeGuessValidWord(t *testing.T) {
 	// First valid guess
 	guess := "valid"
 	expectedResult := []int{1, 2, 1, 2, 0}
+	expectedUsedLetters := map[rune]int{
+		'V': 1,
+		'A': 2,
+		'L': 1,
+		'I': 2,
+		'D': 0,
+	}
 	err := MakeGuess(guess)
 
 	if err != nil {
@@ -207,9 +230,23 @@ func TestMakeGuessValidWord(t *testing.T) {
 		t.Fatalf("MakeGuess(%s) produced result %v, but expected %v.", guess, Results[0], expectedResult)
 	}
 
+	if !usedLettersEqual(UsedLetters, expectedUsedLetters) {
+		t.Fatalf("MakeGuess(%s) did not add correct used letters. Expected: %v, Actual: %v.", guess, expectedUsedLetters, UsedLetters)
+	}
+
 	// Second valid guess
 	guess = "folds"
 	expectedResult = []int{0, 0, 1, 0, 0}
+	expectedUsedLetters = map[rune]int{
+		'V': 1,
+		'A': 2,
+		'L': 1,
+		'I': 2,
+		'D': 0,
+		'F': 0,
+		'O': 0,
+		'S': 0,
+	}
 	err = MakeGuess(guess)
 
 	if err != nil {
@@ -222,6 +259,10 @@ func TestMakeGuessValidWord(t *testing.T) {
 
 	if len(Results) != 2 || !resultsEqual(Results[1], expectedResult) {
 		t.Fatalf("MakeGuess(%s) produced result %v, but expected %v.", guess, Results[1], expectedResult)
+	}
+
+	if !usedLettersEqual(UsedLetters, expectedUsedLetters) {
+		t.Fatalf("MakeGuess(%s) did not add correct used letters. Expected: %v, Actual: %v.", guess, expectedUsedLetters, UsedLetters)
 	}
 
 	// Duplicate guess
@@ -237,5 +278,77 @@ func TestMakeGuessValidWord(t *testing.T) {
 
 	if len(Results) > 2 {
 		t.Fatalf("MakeGuess(%s) added duplicate word to Results.", guess)
+	}
+
+	if !usedLettersEqual(UsedLetters, expectedUsedLetters) {
+		t.Fatalf("MakeGuess(%s) did not add correct used letters. Expected: %v, Actual: %v.", guess, expectedUsedLetters, UsedLetters)
+	}
+}
+
+func TestCompareRunes(t *testing.T) {
+
+	// Test too many of the same letter
+	// Should mark first 'a' as in word, second as not in word, and third in correct place.
+	NewGame()
+	answer := []rune{'b', 'b', 'a', 'a'}
+	guess := []rune{'a', 'a', 'a', 'c'}
+	expectedResult := []int{2, 0, 1, 0}
+	expectedUsedLetters := map[rune]int{
+		'a': 1,
+		'c': 0,
+	}
+
+	actualResult, err := compareRunes(guess, answer)
+
+	if err != nil {
+		t.Fatalf("compareRunes(%v, %v) returned an error when it shouldn't. Error: %v", guess, answer, err)
+	}
+
+	if !resultsEqual(actualResult, expectedResult) {
+		t.Fatalf("compareRunes(%v, %v) return incorrect results. Expected %v, Actual: %v", guess, answer, expectedResult, actualResult)
+	}
+
+	if !usedLettersEqual(UsedLetters, expectedUsedLetters) {
+		t.Fatalf("compareRunes(%v, %v) did not correctly mark used letters. Expected: %v, Actual: %v", guess, answer, expectedUsedLetters, UsedLetters)
+	}
+
+	// Test one each: in word, wrong spot, not in word
+	NewGame()
+	answer = []rune{'a', 'b', 'c'}
+	guess = []rune{'a', 'c', 'z'}
+	expectedResult = []int{1, 2, 0}
+	expectedUsedLetters = map[rune]int{
+		'a': 1,
+		'c': 2,
+		'z': 0,
+	}
+
+	actualResult, err = compareRunes(guess, answer)
+
+	if err != nil {
+		t.Fatalf("compareRunes(%v, %v) returned an error when it shouldn't. Error: %v", guess, answer, err)
+	}
+
+	if !resultsEqual(actualResult, expectedResult) {
+		t.Fatalf("compareRunes(%v, %v) return incorrect results. Expected %v, Actual: %v", guess, answer, expectedResult, actualResult)
+	}
+
+	if !usedLettersEqual(UsedLetters, expectedUsedLetters) {
+		t.Fatalf("compareRunes(%v, %v) did not correctly mark used letters. Expected: %v, Actual: %v", guess, answer, expectedUsedLetters, UsedLetters)
+	}
+
+	// Test incompatible lengths
+	NewGame()
+	answer = []rune{'a', 'b', 'c'}
+	guess = []rune{'a', 'b', 'c', 'd'}
+
+	actualResult, err = compareRunes(guess, answer)
+
+	if err == nil {
+		t.Fatalf("compareRunes(%v, %v) did not return an error when comparing slices of different lengths.", guess, answer)
+	}
+
+	if actualResult != nil {
+		t.Fatalf("compareRunes(%v, %v) returned a non-nil result when comparing slices of different lengths.", guess, answer)
 	}
 }

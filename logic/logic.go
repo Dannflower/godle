@@ -50,7 +50,7 @@ func MakeGuess(guess string) error {
 		return errors.New("word has already been guessed")
 	}
 
-	result, err := compareRunes(convertToRunes(guess), convertToRunes(Answer), UsedLetters)
+	result, err := compareRunes(convertToRunes(guess), convertToRunes(Answer))
 
 	if err == nil {
 
@@ -131,7 +131,7 @@ func getRuneIndices(runes []rune, r rune) []int {
 // or not in the answer at all.
 //
 // If the guess and answer slices are of different lengths, an error is returned.
-func compareRunes(guess []rune, answer []rune, usedLetters map[rune]int) ([]int, error) {
+func compareRunes(guess []rune, answer []rune) ([]int, error) {
 
 	if len(guess) != len(answer) {
 
@@ -148,7 +148,7 @@ func compareRunes(guess []rune, answer []rune, usedLetters map[rune]int) ([]int,
 
 			occurences[r] = occurences[r] + 1
 			result[i] = CorrectPosition
-			usedLetters[r] = CorrectPosition
+			UsedLetters[r] = CorrectPosition
 		}
 	}
 
@@ -170,16 +170,16 @@ func compareRunes(guess []rune, answer []rune, usedLetters map[rune]int) ([]int,
 			result[i] = WrongPosition
 
 			// Don't overwrite correct position status on letters
-			if usedLetters[r] != CorrectPosition {
+			if UsedLetters[r] != CorrectPosition {
 
-				usedLetters[r] = WrongPosition
+				UsedLetters[r] = WrongPosition
 			}
 		}
 
 		// Mark any letters that aren't in the word
-		if usedLetters[r] != WrongPosition && usedLetters[r] != CorrectPosition {
+		if UsedLetters[r] != WrongPosition && UsedLetters[r] != CorrectPosition {
 
-			usedLetters[r] = NotInWord
+			UsedLetters[r] = NotInWord
 		}
 	}
 
