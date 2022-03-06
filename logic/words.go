@@ -1,4 +1,4 @@
-package main
+package logic
 
 // A list of commonly used five-letter English words.
 var Words = []string{

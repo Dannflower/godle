@@ -2,31 +2,18 @@ package main
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
-	"math/rand"
 	"os"
 	"strings"
-	"time"
+
+	"github.com/Dannflower/godle/logic"
 
 	"github.com/fatih/color"
 )
 
-const (
-	// The letter is not in the word.
-	notInWord int = iota
-	// The letter is in the word and in the correct position.
-	correctPosition
-	// The character is in the word but in the wrong position.
-	wrongPosition
-)
-
-const maxGuesses int = 6
-
 var scanner *bufio.Scanner
 
 func init() {
-	rand.Seed(int64(time.Now().Nanosecond()))
 	scanner = bufio.NewScanner(os.Stdin)
 }
 
@@ -88,7 +75,7 @@ func handleMenuInput() {
 
 func printRules() {
 	fmt.Println("Attempt to guess a randomly selected 5-letter word.")
-	fmt.Printf("You get %v guesses to get the right word.\n", maxGuesses)
+	fmt.Printf("You get %v guesses to get the right word.\n", logic.MaxGuesses)
 	fmt.Println("After guessing your guess will be displayed with color coding indicating the following:")
 	color.HiBlack("Gray - The letter is not in the word.")
 	color.Yellow("Yellow - The letter is in the word but is in the wrong position.")
@@ -101,7 +88,7 @@ func printRules() {
 func handleWin(guesses []string) {
 
 	fmt.Println("You got it!")
-	fmt.Printf("Guesses: %v/%v\n", len(guesses), maxGuesses)
+	fmt.Printf("Guesses: %v/%v\n", len(guesses), logic.MaxGuesses)
 	fmt.Println("Hit enter to return to the menu.")
 	scanner.Scan()
 }
@@ -109,44 +96,56 @@ func handleWin(guesses []string) {
 // Start the core game loop.
 func play() {
 
-	answer := selectWord()
-	var guesses []string
-	var results [][]int
-	usedLetters := make(map[rune]int)
-
 	fmt.Println("Guess the word!")
 
-	for len(guesses) < maxGuesses {
+	for len(logic.Guesses) < logic.MaxGuesses {
 
 		fmt.Print("Guess: ")
 		scanner.Scan()
 
 		guess := scanner.Text()
-		result, err := compareRunes(convertToRunes(guess), convertToRunes(answer), usedLetters)
+		err := logic.MakeGuess(guess)
 
 		if err != nil {
 
-			fmt.Printf("Guesses must be %v characters long.\n", len(answer))
+			fmt.Printf("Guesses must be %v characters long.\n", len(logic.Answer))
 
 		} else {
 
-			guesses = append(guesses, guess)
-			results = append(results, result)
-			printGuessResult(guesses, results)
-			printAvailableLetters(usedLetters)
+			printGuessResult()
+			printAvailableLetters(logic.UsedLetters)
 
 			// Player has won!
-			if guess == answer {
+			if logic.HasWon(guess) {
 
-				handleWin(guesses)
+				handleWin(logic.Guesses)
 				return
 			}
 		}
 	}
 
-	fmt.Printf("Nice try! The word was '%s.'\n", answer)
+	fmt.Printf("Nice try! The word was '%s.'\n", logic.Answer)
 	fmt.Println("Hit enter to return to the menu.")
 	scanner.Scan()
+}
+
+// Prints the results of the last guess and all previous guesses
+// with runes color coded depending on whether they are in the word,
+// not in the word, or in the word but the wrong location.
+func printGuessResult() {
+
+	for i, guess := range logic.Guesses {
+
+		capGuess := strings.ToUpper(guess)
+		colorResult := ""
+
+		for j, r := range capGuess {
+
+			colorResult += addHintColor(string(r), logic.Results[i][j])
+		}
+
+		fmt.Println(colorResult)
+	}
 }
 
 // Prints out the complete list of letters with any
@@ -184,134 +183,16 @@ func addHintColor(str string, hint int) string {
 
 	switch hint {
 
-	case notInWord:
+	case logic.NotInWord:
 		return color.HiBlackString(str)
 
-	case wrongPosition:
+	case logic.WrongPosition:
 		return color.YellowString(str)
 
-	case correctPosition:
+	case logic.CorrectPosition:
 		return color.GreenString(str)
 
 	default:
 		return str
 	}
-}
-
-// Prints the results of the last guess and all previous guesses
-// with runes color coded depending on whether they are in the word,
-// not in the word, or in the word but the wrong location.
-func printGuessResult(guesses []string, results [][]int) {
-
-	for i, guess := range guesses {
-
-		capGuess := strings.ToUpper(guess)
-		colorResult := ""
-
-		for j, r := range capGuess {
-
-			colorResult += addHintColor(string(r), results[i][j])
-		}
-
-		fmt.Println(colorResult)
-	}
-}
-
-// Converts the given string into a slice of runes.
-// Each rune is the upper case.
-func convertToRunes(word string) []rune {
-
-	var runes []rune
-
-	for _, r := range strings.ToUpper(word) {
-
-		runes = append(runes, r)
-	}
-
-	return runes
-}
-
-// Returns a slice containing the indices in runes in which
-// r is found. If r is not in runes, nil is returned.
-func getRuneIndices(runes []rune, r rune) []int {
-
-	var indices []int
-
-	for i, ru := range runes {
-
-		if ru == r {
-			indices = append(indices, i)
-		}
-	}
-
-	return indices
-}
-
-// Compares the guess runes to the answer runes and returns
-// the result as a slice of equal length.
-//
-// The result slice will be comprised of the enums describing
-// whether each rune is in the answer, in the correct position,
-// or not in the answer at all.
-//
-// If the guess and answer slices are of different lengths, an error is returned.
-func compareRunes(guess []rune, answer []rune, usedLetters map[rune]int) ([]int, error) {
-
-	if len(guess) != len(answer) {
-
-		return nil, errors.New("length of guess and answer must match")
-	}
-
-	result := make([]int, len(answer))
-	occurences := make(map[rune]int)
-
-	// Check for correct letters first
-	for i, r := range guess {
-
-		if answer[i] == r {
-
-			occurences[r] = occurences[r] + 1
-			result[i] = correctPosition
-			usedLetters[r] = correctPosition
-		}
-	}
-
-	// Check for characters in the wrong position
-	for i, r := range guess {
-
-		// Skip runes already checked
-		if result[i] == correctPosition {
-
-			continue
-		}
-
-		occurences[r] = occurences[r] + 1
-		answerIndices := getRuneIndices(answer, r)
-
-		// Ignore extra occurences of a rune
-		if occurences[r] <= len(answerIndices) {
-
-			result[i] = wrongPosition
-
-			// Don't overwrite correct position status on letters
-			if usedLetters[r] != correctPosition {
-
-				usedLetters[r] = wrongPosition
-			}
-		}
-
-		// Mark any letters that aren't in the word
-		if usedLetters[r] != wrongPosition && usedLetters[r] != correctPosition {
-
-			usedLetters[r] = notInWord
-		}
-	}
-
-	return result, nil
-}
-
-// Selects a random word from the list of answer words.
-func selectWord() string {
-
-	return Words[rand.Intn(len(Words))]
 }
